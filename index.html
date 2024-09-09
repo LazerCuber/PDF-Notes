@@ -186,11 +186,32 @@
             margin-left: 10px;
         }
 
+        .groq-controls {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .groq-controls button {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 10px;
+            transition: transform 0.2s;
+        }
+
+        .groq-controls button:hover {
+            transform: scale(1.2);
+        }
+
         #groq-answer {
             margin-top: 20px;
             padding: 15px;
-            background-color: #f0f0f0;
+            background-color: #ffffff;
             border-radius: 6px;
+            border: 1px solid #5a4e8c;
         }
 
         @media (max-width: 768px) {
@@ -333,7 +354,7 @@
 </head>
 
 <body>
-    <div id="loading-indicator" style="display: none;">Loading...</div> 
+    <div id="loading-indicator" style="display: none;">Loading...</div>
     <div class="container">
         <h1>PDF Notes</h1>
 
@@ -366,11 +387,14 @@
             <div id="note-list"></div>
             <input type="text" id="groq-question" placeholder="Ask Groq AI a question..." style="margin-top: 100px">
             <button id="ask-groq">Ask Groq</button>
+            <button id="clear-groq" style="background-color: #ffffff00;" title="Clear Text">🗑️</button>
+            <button id="copy-groq" style="background-color: #ffffff00;" title="Copy Text">📋</button>
             <div id="groq-answer"></div>
+            </div>
         </div>
 
-        <button id="extract-text" style="width: 100%;">✄ Extract Text</button>
-        <button id="toggle-dark-mode" style="width: 100%;">◐ Toggle Dark Mode</button>
+
+        <button id="toggle-dark-mode" style="width: 100%; border-radius: 0%;">◐ Toggle Dark Mode</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -491,7 +515,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': 'Bearer YOUR_GROQ_API_KEY' 
+                            'Authorization': 'Bearer ' //YOUR_GROQ_API_KEY
                         },
                         body: JSON.stringify({
                             model: "llama3-8b-8192",
@@ -511,6 +535,26 @@
                 } finally {
                     document.getElementById('loading-indicator').style.display = 'none'; // Hide loading
                 }
+            }
+        });
+
+        document.getElementById('clear-groq').addEventListener('click', function() {
+            document.getElementById('groq-answer').innerText = '';
+        });
+
+        // Copy Groq answer text
+        document.getElementById('copy-groq').addEventListener('click', function() {
+            const groqAnswer = document.getElementById('groq-answer');
+            const text = groqAnswer.innerText;
+            
+            if (text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('Text copied to clipboard!');
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            } else {
+                alert('There is no text to copy.');
             }
         });
     </script>
