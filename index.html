@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNotes</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+        :root {
+            --primary-color: #6a5acd;
+            --secondary-color: #4b0082;
+            --background-color: #f4f4f8;
+            --text-color: #333;
+            --note-background: #e6e6fa;
+            --button-hover-color: #5a4e8c;
+            --dark-background: #181818;
+            --dark-text: #f4f4f8;
+            --dark-note-background: #444;
+            --input-background: #292929;
+            --input-text-color: #f4f4f8;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif, system-ui;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            grid-column: 1 / -1;
+            color: var(--secondary-color);
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .pdf-section,
+        .notes-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            transition: transform var(--transition-speed);
+            border: 1px solid #5a4e8c;
+        }
+
+        .pdf-section:hover,
+        .notes-section:hover {
+            transform: scale(1.02);
+        }
+
+        #pdf-viewer {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #pdf-iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper .btn {
+            display: inline-block;
+            padding: 12px 20px;
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color var(--transition-speed), transform var(--transition-speed);
+        }
+
+        .file-upload-wrapper:hover .btn {
+            background-color: var(--button-hover-color);
+            transform: scale(1.05);
+        }
+
+        #note-input {
+            width: calc(100%);
+            min-height: 100px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: border-color var(--transition-speed);
+            overflow-y: auto;
+            resize: both;
+        }
+
+        #note-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        input[type="text"] {
+            width: calc(100%);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: border-color var(--transition-speed);
+            font-size: medium;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: 1px solid var(--primary-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: var(--button-hover-color);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #note-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .note-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--note-background);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            transition: background var(--transition-speed);
+            position: relative;
+        }
+
+        .note-item:hover {
+            background: #d1d1e0;
+        }
+
+        .note-item .delete-icon {
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        #groq-answer {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        button.delete {
+            margin-left: 10px;
+            background-color: red;
+            color: white;
+            border: 1px solid red;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .adjustment-controls {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .dark-mode {
+            background-color: var(--dark-background);
+            color: var(--dark-text);
+        }
+
+        .dark-mode h1 {
+            color: #fff;
+        }
+
+        .dark-mode .pdf-section,
+        .dark-mode .notes-section {
+            background: #18181b;
+        }
+
+        .dark-mode button {
+            background-color: #393940;
+            border: 1px solid #363636;
+        }
+
+        .dark-mode button:hover {
+            background-color: #5b5b5b;
+        }
+
+        .dark-mode #note-input,
+        .dark-mode input[type="text"] {
+            background-color: #202024;
+            color: var(--input-text-color);
+            border: 1px solid #777;
+            outline: 2px solid var(--primary-color);
+        }
+
+        .dark-mode .note-item {
+            background: var(--dark-note-background);
+            color: var(--dark-text);
+        }
+
+        .dark-mode .note-item:hover {
+            background: #666;
+        }
+
+        .dark-mode #groq-answer {
+            background-color: #212121;
+            color: var(--dark-text);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        * {
+            scrollbar-width: none;
+            scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+        }
+
+        #loading-indicator {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #8f8b8b3b;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .formatting-buttons {
+            margin-bottom: 10px;
+        }
+
+        .formatting-buttons button {
+            padding: 5px 10px;
+            margin-right: 5px;
+            margin-left: 2px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .formatting-buttons button:hover {
+            background-color: var(--button-hover-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-indicator" style="display: none;">Loading...</div> 
+    <div class="container">
+        <h1>PDF Notes</h1>
+
+        <div class="pdf-section">
+            <div class="file-upload-wrapper">
+                <button class="btn">Choose PDF File</button>
+                <input type="file" id="pdf-upload" accept="application/pdf">
+            </div>
+            <div class="adjustment-controls">
+                <label for="pdf-height-adjust">Height:</label>
+                <input type="range" id="pdf-height-adjust" min="200" max="800" value="600" style="margin-right: 20px;">
+                <label for="pdf-width-adjust">Width:</label>
+                <input type="range" id="pdf-width-adjust" min="300" max="1000" value="300">
+            </div>
+            <div id="pdf-viewer">
+                <iframe id="pdf-iframe" style="width: 100%; height: 600px; border: none;"></iframe>
+            </div>
+        </div>
+
+        <div class="notes-section">
+            <div class="formatting-buttons">
+                <button onclick="formatText('bold')"><strong>B</strong></button>
+                <button onclick="formatText('italic')"><em>I</em></button>
+                <button onclick="formatText('underline')"><u>U</u></button>
+            </div>
+            <div id="note-input" contenteditable="true" placeholder="Take notes here..."></div>
+            <input type="text" id="note-tag" placeholder="Add a tag...">
+            <button id="save-note">Save Note</button>
+            <button id="download-notes">Download Notes</button>
+            <div id="note-list"></div>
+            <input type="text" id="groq-question" placeholder="Ask Groq AI a question..." style="margin-top: 100px">
+            <button id="ask-groq">Ask Groq</button>
+            <div id="groq-answer"></div>
+        </div>
+
+        <button id="extract-text" style="width: 100%;">✄ Extract Text</button>
+        <button id="toggle-dark-mode" style="width: 100%;">◐ Toggle Dark Mode</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+
+    <script>
+        let notes = [];
+        let darkMode = false;
+
+        // PDF Handling
+        document.getElementById('pdf-upload').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    loadPDF(e.target.result);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        function loadPDF(arrayBuffer) {
+            const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            document.getElementById('pdf-iframe').src = url;
+        }
+
+        // Adjust PDF viewer height and width
+        document.getElementById('pdf-height-adjust').addEventListener('input', function (event) {
+            document.getElementById('pdf-iframe').style.height = event.target.value + 'px';
+        });
+
+        document.getElementById('pdf-width-adjust').addEventListener('input', function (event) {
+            document.getElementById('pdf-iframe').style.width = event.target.value + 'px';
+        });
+
+        // Rich text formatting function
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('note-input').focus();
+        }
+
+        // Save note and update the list
+        document.getElementById('save-note').addEventListener('click', function () {
+            const noteText = document.getElementById('note-input').innerHTML;
+            const noteTag = document.getElementById('note-tag').value;
+            if (noteText) {
+                notes.push({ text: noteText, tag: noteTag });
+                updateNoteList();
+                document.getElementById('note-input').innerHTML = '';
+                document.getElementById('note-tag').value = '';
+                saveNotesToLocalStorage();
+            }
+        });
+
+        function updateNoteList() {
+            const noteList = document.getElementById('note-list');
+            noteList.innerHTML = '';
+            notes.forEach(function (note, index) {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note-item';
+                noteElement.textContent = note.tag || 'Untitled';
+
+                noteElement.onclick = () => {
+                    document.getElementById('note-input').innerHTML = note.text;
+                    document.getElementById('note-tag').value = note.tag;
+                };
+
+                const deleteIcon = document.createElement('span');
+                deleteIcon.textContent = '🗑️'; // Delete icon
+                deleteIcon.className = 'delete-icon';
+                deleteIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    notes.splice(index, 1);
+                    updateNoteList();
+                    saveNotesToLocalStorage();
+                };
+
+                noteElement.appendChild(deleteIcon);
+                noteList.appendChild(noteElement);
+            });
+        }
+
+        function saveNotesToLocalStorage() {
+            localStorage.setItem('notes', JSON.stringify(notes));
+        }
+
+        window.addEventListener('load', function () {
+            const savedNotes = localStorage.getItem('notes');
+            if (savedNotes) {
+                notes = JSON.parse(savedNotes);
+                updateNoteList();
+            }
+        });
+
+        // Download notes as a text file
+        document.getElementById('download-notes').addEventListener('click', function () {
+            const blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'notes.txt';
+            link.click();
+        });
+
+        // Toggle dark mode
+        document.getElementById('toggle-dark-mode').addEventListener('click', function () {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark-mode', darkMode);
+            updateNoteList(); // Update note list to reflect dark mode changes
+        });
+
+        // Groq AI API interaction
+        document.getElementById('ask-groq').addEventListener('click', async function () {
+            const question = document.getElementById('groq-question').value;
+            if (question) {
+                document.getElementById('loading-indicator').style.display = 'block'; // Show loading
+                try {
+                    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer YOUR_GROQ_API_KEY' 
+                        },
+                        body: JSON.stringify({
+                            model: "llama3-8b-8192",
+                            messages: [{ role: "user", content: question }]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    document.getElementById('groq-answer').innerText = data.choices.length > 0 ? data.choices[0].message.content : "No answer received.";
+                } catch (error) {
+                    document.getElementById('groq-answer').innerText = "Error: " + error.message;
+                    console.error('Error:', error);
+                } finally {
+                    document.getElementById('loading-indicator').style.display = 'none'; // Hide loading
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
